@@ -36,7 +36,18 @@ Key settings:
 - Start command: `gunicorn app:app`
 - Persistent disk: mounted at `/opt/render/project/src/data` (used by `SQLITE_DIR`)
   (requires a Render plan that supports disks)
+- Python version: set to `3.11.11` via `PYTHON_VERSION`
 
 If you deploy via the Render dashboard manually, ensure:
 - `SECRET_KEY` is set
 - `SQLITE_DIR` is set to the disk mount path
+- `PYTHON_VERSION` is set to `3.11.11`
+
+### Optional OCR Dependencies
+
+OCR features are optional and disabled when OCR packages are not installed.
+To enable OCR locally, install:
+
+```
+pip install -r requirements.txt -r requirements-ocr.txt
+```

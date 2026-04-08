@@ -1,0 +1,371 @@
+{% extends "student/student_layout.html" %}
+
+{% block student_content %}
+<div class="space-y-6">
+    <div>
+        <h1 id="greeting" class="text-3xl font-bold text-gray-900">Student Dashboard</h1>
+        <p id="student-line" class="text-sm text-gray-500 mt-1"></p>
+    </div>
+
+    <div id="urgent-panel" class="hidden bg-rose-50 border border-rose-200 rounded-xl shadow-sm p-5">
+        <div class="flex items-center justify-between gap-4">
+            <div>
+                <h2 class="text-lg font-semibold text-rose-900">Urgent Notifications</h2>
+                <p class="text-sm text-rose-700 mt-1">Added slots and personal staff messages appear here.</p>
+            </div>
+        </div>
+        <div id="urgent-list" class="mt-4 space-y-3"></div>
+    </div>
+
+    <!-- Booking Section -->
+    <div id="booking-section" class="bg-white border border-gray-200 rounded-xl shadow-sm p-5 hidden">
+        <h2 class="text-lg font-semibold text-gray-900 mb-4">Book a Laundry Slot</h2>
+        <div class="space-y-4">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Select Date</label>
+                    <input type="date" id="date-picker" class="border border-gray-300 rounded-md p-2 w-full focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                <div id="monthly-stats" class="bg-blue-50 rounded-lg p-3 text-sm text-blue-800 flex flex-col justify-center">
+                    <p class="font-medium">Monthly Usage</p>
+                    <p id="usage-text">Loading...</p>
+                </div>
+            </div>
+
+            <div id="smart-suggestion" class="hidden rounded-xl border border-emerald-200 bg-emerald-50 p-4">
+                <div class="flex items-center justify-between gap-3">
+                    <h3 class="text-sm font-bold text-emerald-900">Smart Suggestion</h3>
+                    <span id="suggest-crowd-pill" class="text-[10px] font-bold uppercase tracking-wide px-2 py-1 rounded-full bg-emerald-200 text-emerald-900"></span>
+                </div>
+                <p class="text-xs text-emerald-700 mt-1">Best time to book</p>
+                <p id="suggest-slot" class="text-lg font-extrabold text-emerald-900 mt-1"></p>
+                <p id="suggest-reason" class="text-xs text-emerald-800 mt-2 leading-relaxed"></p>
+            </div>
+            
+            <div id="slots-container" class="hidden">
+                <label class="block text-sm font-medium text-gray-700 mb-2">Available Time Slots</label>
+                <div id="slots-grid" class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                    <!-- Slots rendered here -->
+                </div>
+            </div>
+
+            <button id="book-btn" class="hidden px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-bold w-full sm:w-auto shadow-sm transition-all disabled:opacity-50 mt-4">
+                Confirm Booking
+            </button>
+            <p id="book-msg" class="text-sm mt-3"></p>
+        </div>
+    </div>
+
+    <!-- Active Booking Section -->
+    <div id="active-booking-section" class="hidden rounded-xl border p-5 shadow-sm bg-blue-50 border-blue-200 text-blue-900">
+        <div class="flex items-center justify-between mb-4">
+            <h2 class="text-lg font-semibold">Your Active Booking</h2>
+            <span id="ab-status" class="uppercase tracking-wide font-bold text-[10px] py-1 px-2.5 rounded-full bg-blue-600 text-white shadow-sm"></span>
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div class="bg-white/50 p-3 rounded-lg border border-blue-100">
+                <label class="block text-[10px] uppercase font-bold text-blue-400 mb-1">Scheduled Date</label>
+                <span id="ab-date" class="text-sm font-medium"></span>
+                <div id="ab-day" class="text-[11px] text-blue-500 font-semibold mt-1"></div>
+            </div>
+            <div class="bg-white/50 p-3 rounded-lg border border-blue-100">
+                <label class="block text-[10px] uppercase font-bold text-blue-400 mb-1">Time Slot</label>
+                <span id="ab-slot" class="text-sm font-medium"></span>
+            </div>
+        </div>
+        <p class="text-[11px] mt-4 text-blue-600 font-medium opacity-80 italic">Note: You can only have one active booking at a time and 4 bookings per month.</p>
+        <div class="mt-4 rounded-lg border border-blue-200 bg-white/70 p-3">
+            <p class="text-xs font-bold uppercase tracking-wide text-blue-700">Smart Suggestion</p>
+            <p class="text-xs text-blue-800 mt-1">Best-slot recommendation will appear after this active booking is completed.</p>
+        </div>
+    </div>
+
+    <div class="bg-white border border-gray-200 rounded-xl shadow-sm p-5">
+        <h2 class="text-lg font-semibold text-gray-900 mb-3">Quick Actions</h2>
+        <div class="flex flex-wrap gap-3">
+            <a href="/student/status" class="flex-1 min-w-[140px] text-center px-4 py-3 rounded-xl bg-blue-50 text-blue-700 text-sm font-bold border border-blue-100 hover:bg-blue-100 transition-colors">
+                Track Laundry
+            </a>
+            <a href="/student/notifications" class="flex-1 min-w-[140px] text-center px-4 py-3 rounded-xl bg-emerald-50 text-emerald-700 text-sm font-bold border border-emerald-100 hover:bg-emerald-100 transition-colors">
+                Notifications
+            </a>
+            <a href="/student/complaints" class="flex-1 min-w-[140px] text-center px-4 py-3 rounded-xl bg-rose-50 text-rose-700 text-sm font-bold border border-rose-100 hover:bg-rose-100 transition-colors">
+                Report Issue
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(async function () {
+    const sid = localStorage.getItem('studentId');
+    if (!sid) {
+        window.location.replace('/student/register');
+        return;
+    }
+
+    let selectedSlot = null;
+    const LIMIT = 4;
+
+    async function loadUrgentAlerts() {
+        try {
+            const res = await fetch('/api/urgent-alerts?studentId=' + encodeURIComponent(sid));
+            const alerts = res.ok ? await res.json() : [];
+            const panel = document.getElementById('urgent-panel');
+            const list = document.getElementById('urgent-list');
+            if (!alerts.length) {
+                panel.classList.add('hidden');
+                return;
+            }
+            panel.classList.remove('hidden');
+            list.innerHTML = alerts.map((alert) => `
+                <div class="rounded-lg border border-rose-200 bg-white p-4">
+                    <div class="flex items-center justify-between gap-3">
+                        <p class="text-sm font-semibold text-rose-900">${alert.title || ''}</p>
+                        <span class="text-[10px] font-bold uppercase tracking-wider ${alert.audience === 'student' ? 'text-amber-700' : 'text-rose-700'}">${alert.audience === 'student' ? 'Personal' : 'Shared'}</span>
+                    </div>
+                    <p class="mt-2 text-sm text-rose-800">${alert.message || ''}</p>
+                </div>
+            `).join('');
+        } catch (error) {
+            console.error(error);
+        }
+    }
+
+    function getMonthPrefix(dateStr) {
+        return dateStr.substring(0, 7); // YYYY-MM
+    }
+
+    async function updateUsageStats(batches) {
+        const now = new Date();
+        const currentMonth = now.getFullYear() + "-" + String(now.getMonth() + 1).padStart(2, '0');
+        const count = batches.filter(b => b.scheduledDate && b.scheduledDate.startsWith(currentMonth)).length;
+        
+        const usageText = document.getElementById('usage-text');
+        usageText.innerHTML = `<strong>${count} / ${LIMIT}</strong> slots used this month.`;
+        
+        if (count >= LIMIT) {
+            usageText.classList.add('text-red-600');
+            return true; // Limit reached
+        }
+        return false;
+    }
+
+    try {
+        const studentRes = await fetch('/api/students/' + encodeURIComponent(sid));
+        if (!studentRes.ok) throw new Error('Student not found');
+        const student = await studentRes.json();
+
+        document.getElementById('greeting').textContent = 'Hello, ' + ((student.name || 'Student').split(' ')[0]) + '!';
+        document.getElementById('student-line').textContent = 'Floor ' + student.floor + ' - Room ' + student.roomNumber;
+
+        // Check active booking
+        const batchesRes = await fetch(`/api/batches?studentId=${sid}`);
+        const batches = await batchesRes.json();
+        
+        const isLimitReached = await updateUsageStats(batches);
+        const activeBatches = (batches || []).filter(b => !['pickedUp', 'cancelled'].includes(b.status));
+        
+        if (activeBatches.length > 0) {
+            // Show active booking
+            const ab = activeBatches[0];
+            document.getElementById('booking-section').classList.add('hidden');
+            document.getElementById('active-booking-section').classList.remove('hidden');
+            document.getElementById('ab-date').textContent = ab.scheduledDate || 'Unscheduled';
+            document.getElementById('ab-slot').textContent = ab.timeSlot || 'Any';
+            document.getElementById('ab-status').textContent = ab.status;
+            const dayTarget = document.getElementById('ab-day');
+            if (ab.scheduledDate) {
+                const d = new Date(ab.scheduledDate + 'T00:00:00');
+                dayTarget.textContent = d.toLocaleDateString(undefined, { weekday: 'long' });
+            } else {
+                dayTarget.textContent = '';
+            }
+        } else {
+            // Show booking section if limit not reached
+            document.getElementById('booking-section').classList.remove('hidden');
+            const dt = new Date();
+            const todayStr = dt.getFullYear() + "-" + String(dt.getMonth()+1).padStart(2,'0') + "-" + String(dt.getDate()).padStart(2,'0');
+            document.getElementById('date-picker').min = todayStr;
+            document.getElementById('date-picker').value = todayStr;
+            
+            if (isLimitReached) {
+                document.getElementById('date-picker').disabled = true;
+                document.getElementById('book-msg').textContent = 'You have reached your monthly limit.';
+                document.getElementById('book-msg').className = 'text-sm mt-3 text-red-600 font-bold';
+            }
+        }
+    } catch (e) {
+        console.error(e);
+        document.getElementById('student-line').textContent = 'Could not load your dashboard.';
+    }
+
+    loadUrgentAlerts();
+
+    const datePicker = document.getElementById('date-picker');
+    const slotsContainer = document.getElementById('slots-container');
+    const slotsGrid = document.getElementById('slots-grid');
+    const bookBtn = document.getElementById('book-btn');
+    const bookMsg = document.getElementById('book-msg');
+    const suggestionCard = document.getElementById('smart-suggestion');
+    const suggestSlot = document.getElementById('suggest-slot');
+    const suggestReason = document.getElementById('suggest-reason');
+    const suggestCrowdPill = document.getElementById('suggest-crowd-pill');
+
+    function crowdBadgeClass(level) {
+        if (level === 'low') return 'bg-emerald-100 text-emerald-700 border-emerald-200';
+        if (level === 'high') return 'bg-rose-100 text-rose-700 border-rose-200';
+        return 'bg-amber-100 text-amber-700 border-amber-200';
+    }
+
+    function updateSuggestionCard(suggestion) {
+        if (!suggestion || !suggestion.recommendedSlot) {
+            suggestionCard.classList.remove('hidden');
+            suggestSlot.textContent = 'No slot recommendation available';
+            suggestReason.textContent = suggestion && suggestion.message ? suggestion.message : 'Please pick another date.';
+            suggestCrowdPill.textContent = 'N/A';
+            suggestCrowdPill.className = 'text-[10px] font-bold uppercase tracking-wide px-2 py-1 rounded-full bg-gray-200 text-gray-700';
+            return;
+        }
+
+        suggestionCard.classList.remove('hidden');
+        suggestSlot.textContent = suggestion.recommendedSlot + ' (Least crowded)';
+        suggestReason.textContent = suggestion.explanation || 'Recommended from historical and live usage.';
+        suggestCrowdPill.textContent = (suggestion.crowdLabel || 'Medium crowd');
+        suggestCrowdPill.className = 'text-[10px] font-bold uppercase tracking-wide px-2 py-1 rounded-full border ' + crowdBadgeClass(suggestion.crowdLevel);
+    }
+
+    datePicker.addEventListener('change', async function() {
+        const dateVal = this.value;
+        if (!dateVal) {
+            slotsContainer.classList.add('hidden');
+            bookBtn.classList.add('hidden');
+            suggestionCard.classList.add('hidden');
+            return;
+        }
+
+        slotsContainer.classList.remove('hidden');
+        slotsGrid.innerHTML = '<p class="text-sm text-gray-400 col-span-3 py-4 text-center">Loading slots...</p>';
+        suggestionCard.classList.remove('hidden');
+        suggestSlot.textContent = 'Analyzing booking patterns...';
+        suggestReason.textContent = 'Checking live slot usage and past booking trends.';
+        suggestCrowdPill.textContent = '...';
+        suggestCrowdPill.className = 'text-[10px] font-bold uppercase tracking-wide px-2 py-1 rounded-full bg-gray-200 text-gray-700';
+        selectedSlot = null;
+        bookBtn.classList.add('hidden');
+        bookMsg.textContent = '';
+
+        try {
+            const [slotsRes, suggestionRes] = await Promise.all([
+                fetch(`/api/slots/available?date=${dateVal}&studentId=${sid}`),
+                fetch(`/api/slots/recommendation?date=${dateVal}&studentId=${sid}`)
+            ]);
+            const slotsData = await slotsRes.json();
+            const suggestionData = suggestionRes.ok ? await suggestionRes.json() : null;
+            updateSuggestionCard(suggestionData);
+            
+            slotsGrid.innerHTML = '';
+            if (!Array.isArray(slotsData)) {
+                throw new Error('Unexpected slots payload');
+            }
+
+            slotsData.forEach(s => {
+                const isFull = s.available <= 0;
+                const crowdText = (s.crowdLabel || 'Medium crowd');
+                const isRecommended = !!s.isRecommended;
+                const btn = document.createElement('button');
+                btn.className = `flex flex-col items-center justify-center p-4 rounded-xl border transition-all duration-200 ` + 
+                    (isFull 
+                        ? `bg-gray-50 border-gray-100 text-gray-300 cursor-not-allowed` 
+                        : `bg-white border-blue-100 text-blue-900 hover:border-blue-400 hover:bg-blue-50/50 slot-btn shadow-sm hover:shadow`) +
+                    (isRecommended && !isFull ? ` ring-2 ring-emerald-200` : ``);
+                
+                btn.disabled = isFull;
+                btn.innerHTML = `
+                    <span class="font-bold text-sm mb-1">${s.slot}</span>
+                    <span class="slot-availability text-[10px] ${isFull ? 'text-red-400 font-bold uppercase' : 'text-gray-400 font-medium'}">
+                        ${isFull ? 'Sold Out' : s.available + ' spots left'}
+                    </span>
+                    <span class="mt-2 text-[10px] font-bold uppercase tracking-wide px-2 py-1 rounded-full border ${crowdBadgeClass(s.crowdLevel)}">
+                        ${crowdText}
+                    </span>
+                `;
+
+                if (!isFull) {
+                    btn.addEventListener('click', () => {
+                        document.querySelectorAll('.slot-btn').forEach(b => {
+                            b.classList.remove('bg-blue-600', 'text-white', 'border-blue-600', 'ring-4', 'ring-blue-100', 'shadow-md');
+                            b.classList.remove('ring-2', 'ring-emerald-200');
+                            b.classList.add('bg-white', 'text-blue-900', 'border-blue-100');
+                            const availabilityBadge = b.querySelector('.slot-availability');
+                            if (availabilityBadge) {
+                                availabilityBadge.classList.remove('text-blue-100');
+                                availabilityBadge.classList.add('text-gray-400');
+                            }
+                        });
+                        
+                        btn.classList.add('bg-blue-600', 'text-white', 'border-blue-600', 'ring-4', 'ring-blue-100', 'shadow-md');
+                        btn.classList.remove('bg-white', 'text-blue-900', 'border-blue-100');
+                        const selectedAvailability = btn.querySelector('.slot-availability');
+                        if (selectedAvailability) {
+                            selectedAvailability.classList.add('text-blue-100');
+                            selectedAvailability.classList.remove('text-gray-400');
+                        }
+                        
+                        selectedSlot = s.slot;
+                        bookBtn.classList.remove('hidden');
+                        bookBtn.scrollIntoView({ behavior: 'smooth', block: 'end' });
+                    });
+                }
+                slotsGrid.appendChild(btn);
+            });
+        } catch (err) {
+            slotsGrid.innerHTML = '<p class="text-sm text-red-500 col-span-3 py-4 text-center">Failed to load slots.</p>';
+            suggestionCard.classList.add('hidden');
+        }
+    });
+
+    // Trigger initial recommendation load after listener is attached.
+    if (datePicker && datePicker.value && !datePicker.disabled) {
+        datePicker.dispatchEvent(new Event('change'));
+    }
+
+    bookBtn.addEventListener('click', async function() {
+        if (!selectedSlot || !datePicker.value) return;
+
+        bookBtn.disabled = true;
+        bookMsg.textContent = 'Processing your reservation...';
+        bookMsg.className = 'text-sm mt-3 text-blue-600 font-medium animate-pulse';
+
+        try {
+            const res = await fetch('/api/bookings', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    studentId: sid,
+                    date: datePicker.value,
+                    timeSlot: selectedSlot
+                })
+            });
+            const data = await res.json();
+            
+            if (!res.ok) {
+                bookBtn.disabled = false;
+                bookMsg.textContent = data.error || 'Failed to book slot.';
+                bookMsg.className = 'text-sm mt-3 text-red-500 font-bold';
+            } else {
+                bookMsg.textContent = 'Booking confirmed! Reloading...';
+                bookMsg.className = 'text-sm mt-3 text-emerald-600 font-bold';
+                setTimeout(() => window.location.reload(), 800);
+            }
+        } catch(err) {
+            bookBtn.disabled = false;
+            bookMsg.textContent = 'Connection error. Please try again.';
+            bookMsg.className = 'text-sm mt-3 text-red-500 font-bold';
+        }
+    });
+})();
+</script>
+{% endblock %}

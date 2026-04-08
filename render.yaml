@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: vtop-laundry
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn app:app
+    envVars:
+      - key: SECRET_KEY
+        generateValue: true
+      - key: SQLITE_DIR
+        value: /opt/render/project/src/data
+    disk:
+      name: app-data
+      mountPath: /opt/render/project/src/data
+      sizeGB: 1
